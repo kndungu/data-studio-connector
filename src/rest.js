@@ -71,10 +71,31 @@ function getSqlEndpoint(dataset) {
     return 'https://api.data.world/v0/sql/' + normalizedDatasetKey + '?includeTableSchema=true';
 }
 
+function sanitiseJSONstring(objectString) {
+  // Wrap argument in quotes
+  function replace(match) {
+    var value = match.replace(/[^\w]/g, '')
+    return '"'+ value + '"';
+  }
+
+  // Matches values with opening but no closing quotes
+  var nonClosedValueRegex = /"\w+(?=:| |}|,)/g;
+
+  // Matches values with closing but no opening quotes
+  var nonOpenedValueRegex = /(?<=:| |{|,)\w+"/g;
+
+  return objectString
+    .replace(nonClosedValueRegex, replace)
+    .replace(nonOpenedValueRegex, replace);
+}
+
 function parseNdJson(text, sampleSize) {
     var textLines = text.split(/\r?\n/);
 
     sampleSize = sampleSize || textLines.length;
 
-    return textLines.slice(0, sampleSize).map(JSON.parse);
+    return textLines
+      .slice(0, sampleSize)
+      .map(sanitiseJSONstring)
+      .map(JSON.parse);
 }
